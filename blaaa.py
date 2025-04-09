@@ -2,17 +2,14 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Load data from Excel
 df = pd.read_excel('testxy.xlsx')  # Replace with your file name
 x = df['x'].values
 y = df['y'].values
 
-# Fit a curve (e.g., 2nd degree polynomial)
 degree = 100
 coeffs = np.polyfit(x, y, degree)
 poly_eq = np.poly1d(coeffs)
 
-# Generate x values for the smooth curve
 x_fit = np.linspace(min(x), max(x), 100)
 y_fit = poly_eq(x_fit)
 

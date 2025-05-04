@@ -1,29 +1,155 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
+from cs1033_evaluator import evaluate_lab9
 
-df = pd.read_excel('testxy.xlsx')  # Replace with your file name
-x = df['x'].values
-y = df['y'].values
+INPUT_FILE_NAME = input()
+################################################################################
+# Do not change anything above this line
+################################################################################
 
-degree = 100
-coeffs = np.polyfit(x, y, degree)
-poly_eq = np.poly1d(coeffs)
+# Enter your code here
+# Use INPUT_FILE_NAME variable to read the file instead of 'contamination_analysis.txt'
 
-x_fit = np.linspace(min(x), max(x), 100)
-y_fit = poly_eq(x_fit)
+import re #import regax
 
-# Plot
-plt.scatter(x, y, label='Data Points', s=5)
-plt.plot(x_fit, y_fit, color='red', label=f'Best Fit Curve (degree {degree})')
-plt.xlabel('INPUT ANGLE(θ) (deg(°))')
-plt.ylabel('OUTPUT ANGLE(α) (deg(°))')
-plt.legend()
-plt.title('INPUT ANGLE(θ) VS OUTPUT ANGLE(α)')
-plt.xticks(np.arange(0, 361, 30))
-plt.grid(plt.grid(which='major', color='gray', linestyle='-', linewidth=0.5, alpha=0.7))
-plt.minorticks_on()
-plt.grid(plt.grid(which='minor', color='gray', linestyle='--', linewidth=0.2, alpha=0.8))
-plt.xlim(0, 359)
-plt.ylim(30, 140)
-plt.show()
+
+def read_file_data(input_file_name):
+    '''
+    Read input file and return dictionary containing chemical data
+    '''
+    
+    chemical_data_dictionary={}
+    
+    try:
+        #opens the input file to read
+        with open(input_file_name,'r') as input_file:
+    
+            for line in input_file: #executes for each line in file
+                chemical_name,chemical_formula=line.strip().split()
+                
+                #match the format of the text line using regax
+                element_composition=re.findall(r'([A-Z][a-z]*)(\d*)',chemical_formula)
+                
+                composition_dictionary={} #dictionary to contain element compositions
+    
+                for element in element_composition: #retrieving the count of elements
+                    if element[0] in composition_dictionary:
+                        composition_dictionary[element[0]]+=int(element[1])
+                    elif element[1]=='':
+                        composition_dictionary[element[0]]=1
+                    else:
+                        composition_dictionary[element[0]]=int(element[1])
+    
+                chemical_data_dictionary[chemical_name]=composition_dictionary
+    
+        #returns a dictionary containing all chemicals and their element compositions
+        return(chemical_data_dictionary) 
+        
+    except FileNotFoundError:
+        return None
+          
+            
+def categorize_chemical(chemical_data_dictionary):
+    '''
+    Categorize chemicals into each Level
+    '''
+    #lists to hold compounds of each category
+    level_0_list=[]
+    level_1_list=[]
+    level_2_list=[]
+    level_3_list=[]
+    level_4_list=[]
+        
+    for chemical_name,chemical_composition in chemical_data_dictionary.items():
+        #booleans to identify the category of compound
+        is_level_1=False
+        is_level_2=False
+        is_level_3=False
+        is_categorized=False
+        
+        #for chemicals of level 1
+        if chemical_composition.get('S',0)>=1 and chemical_composition.get('O',0)>=4 and chemical_composition.get('Na',0)>=1:
+            is_level_1=True
+            is_categorized=True
+            chemical_composition['S']-=1
+            chemical_composition['O']-=4
+            chemical_composition['Na']-=1
+            
+        #for chemicals of level 2   
+        if chemical_composition.get('S',0)>=1 and chemical_composition.get('O',0)>=3 and chemical_composition.get('Mg',0)>=1:
+            if is_categorized==True:
+                level_4_list.append(chemical_name)
+                continue
+            is_level_2=True
+            is_categorized=True
+            chemical_composition['S']-=1
+            chemical_composition['O']-=3
+            chemical_composition['Mg']-=1
+            
+        #for chemicals of level 3
+        if chemical_composition.get('O',0)>=2 and chemical_composition.get('Cl',0)>=3:
+            if is_categorized==True:
+                level_4_list.append(chemical_name)
+                continue
+            is_level_3=True
+            is_categorized=True
+
+        #for chemicals of level 0
+        if is_categorized==False:
+            level_0_list.append(chemical_name)
+            continue
+
+        if is_level_1==True:level_1_list.append(chemical_name)
+        elif is_level_2==True:level_2_list.append(chemical_name)
+        elif is_level_3==True:level_3_list.append(chemical_name)
+    
+    #returns lists of chemicals of each category
+    return level_0_list,level_1_list,level_2_list,level_3_list,level_4_list
+
+
+def print_categorized_output(output_file,level_list):
+    '''
+    Print chemicals to respective output file based on their category
+    '''
+    #opens respective output files to wirte
+    for chemical_name in level_list:
+        #writing relevant chemical names to relevant file
+        output_file.write(f'{chemical_name}\n')
+
+
+################################################################################
+# Main
+
+chemical_data_dictionary=read_file_data(INPUT_FILE_NAME)
+
+level_0_list,level_1_list,level_2_list,level_3_list,level_4_list=categorize_chemical(chemical_data_dictionary)
+
+#executes for each category of chemicals
+with open('Level_0.txt', 'w') as file0:
+    if level_0_list:
+        for chemical_name in level_0_list:
+            #writing relevant chemical names to relevant file
+            file0.write(f'{chemical_name}\n')
+with  open('Level_1.txt', 'w') as file1:
+    if level_1_list:
+        for chemical_name in level_1_list:
+            #writing relevant chemical names to relevant file
+            file1.write(f'{chemical_name}\n')
+with  open('Level_2.txt', 'w') as file2:
+    if level_2_list:
+        for chemical_name in level_2_list:
+            #writing relevant chemical names to relevant file
+            file2.write(f'{chemical_name}\n')
+with open('Level_3.txt', 'w') as file3:
+    if level_3_list:
+        for chemical_name in level_3_list:
+            #writing relevant chemical names to relevant file
+            file3.write(f'{chemical_name}\n')
+with open('Level_4.txt', 'w') as file4:
+    if level_4_list:
+        for chemical_name in level_4_list:
+            #writing relevant chemical names to relevant file
+            file4.write(f'{chemical_name}\n')
+
+
+################################################################################
+# Do not change anything below this line.
+evaluate_lab9()
